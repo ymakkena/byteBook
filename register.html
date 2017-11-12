@@ -1,0 +1,88 @@
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>Register - ByteBook</title>
+        <script src ="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <link rel="stylesheet" href="assets/css/bootstrap.min.css" type="text/css"  />
+        <style type="text/css">
+            .boxhovered:hover{
+                background: #999;
+                cursor:pointer;
+            }
+        </style>
+        <script type="text/javascript">
+        function createAccount(){
+            var emailCheck = document.getElementById("newUsername").value;
+            var req = new XMLHttpRequest();
+            req.open("GET", "checkExists.php?query=" + emailCheck , true);
+            req.onreadystatechange = displayOutput;
+            req.send();
+
+            if(document.getElementById("errorDisplay").innerHTML == "Email exists"){
+                document.getElementById("createb").disabled = true;
+            }
+            else {
+                document.getElementById("createb").disabled = false;
+            }
+
+            }
+        function displayOutput(){
+            if (this.readyState == 4 && this.status == 200) {
+                if(this.responseText ==="exists"){
+                    document.getElementById("errorDisplay").innerHTML = "Email Exists";
+                }
+                else if(this.responseText === "clear"){
+                    document.getElementById("errorDisplay").innerHTML = "";
+                }
+            }
+        }
+
+        var typingTimer;
+        function delayExecute(){
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(
+            function(){createAccount()},
+            200
+            );
+
+    return true;
+}   
+        function confirm(){
+            document.getElementById("errorDisplay").innerHTML = "You've successfully made an account. Please proceed to the login page.";
+            document.getElementById("registerForm").reset();
+        }
+        </script>
+</head>
+<body>
+ <nav class="navbar navbar-default">
+            <a class="navbar-brand" href="#">ByteBook</a>
+            <ul class="nav navbar-nav navbar-left">
+                <li><a href="searchRecipes.html">Search Recipes</a></li>
+                <li><a href="dash.html">My Recipes</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li id = "logged"><a href="login.html">Login</a></li>
+                <li><p>. . .</p></li>
+            </ul>
+        </nav>
+
+       <div class = "container">
+        <div class = "col-md-6">
+            <h4>Create Account</h4>
+            <div class = "form-group">
+                <div class = "content-center">
+                <iframe name = "frame" style="display:none;"></iframe>
+                <form action ="accounts.php" method = "post" id ="registerForm" target = "frame">
+                <input type = "text" class = "form-control" placeholder = "Name" id = "firstName" autocomplete = "on"> <br>
+                <input type = "text" class = "form-control" placeholder = "E-mail" id = "newUsername" autocomplete = "on" onkeyDown = "delayExecute()"> <br>
+                <input type = "password" class = "form-control" placeholder = "Password" id = "newPassword" autocomplete = "on">
+            </div> <br>
+            <div id = "errorDisplay"></div> <br>
+            <button type="submit" class="btn btn-primary btn-block btn-md" id ="createb" onclick="confirm();">Create Account</button>
+        </div>
+    </form>
+        <p>If you have an account, <a href = "login.html">LOGIN</a></p>
+    </div>
+    </div>
+</body>
+</html>

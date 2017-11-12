@@ -1,0 +1,360 @@
+<!DOCTYPE <!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>ByteBook - Dash</title>
+        <script src ="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src ="assets/jquery-1.11.3-jquery.min.js"></script>
+        <link rel="stylesheet" href="assets/css/bootstrap.min.css" type="text/css"  />
+        <script src="assets/js/bootstrap.min.js"></script>
+        
+        <style type="text/css">
+            .boxhovered:hover{
+                background: #999;
+                cursor:pointer;
+            }
+            p, li{
+                font-size: 16px;
+            }
+            
+            .highlighted{
+                background: #E0FFFF;
+            }
+        </style>
+        
+        <script type="text/javascript">
+            var offset = 0;
+            var favoritesArray = [];
+            //var recipeInfo = [];
+            
+            $(document).ready(function(){
+                $("#myModal").modal({ show: false})
+                offset = 0;
+                favoritesArray = getData(); //user ID???
+                console.log(favoritesArray);
+                getFavorites(offset);
+			});
+			
+			function getData(){
+			    return [840513, 583672]; //for testing
+			    //use the logged in user to get an array of the ids of 
+			    //favorited recipes by that user
+			}
+			function prev(){
+                if(offset != 0){
+                    offset = offset - 10;
+                    getFavorites(offset);
+                }
+            }
+            
+            function next(){
+                if((offset + 10) < favoritesArray.length){
+                    offset = offset + 10;
+                    getFavorites(offset);
+                }
+            }
+            
+            function getFavorites(offset){
+                var recipes = [];
+                var finalLen = offset + 10;
+                if(finalLen >= favoritesArray.length){
+                    finalLen = favoritesArray.length;
+                }
+                for(var i = offset; i < finalLen; i++){
+                    recipes.push(favoritesArray[i]);
+                }
+                updatePage(recipes);
+            }
+            
+            function getDetails(id, forModal){
+                $.ajax({
+                    url: "getRecipe.php?id=" + id,
+                    success: function(resp){
+                        var json = jQuery.parseJSON(resp);
+                        if(forModal){
+                            openModal(json);
+                        }
+                        else{
+                            addRecipe(json);
+                        }
+                    }
+                });
+                
+            }
+            
+            function clearPage(){
+                var pageDiv = document.getElementById("results");
+                while (pageDiv.hasChildNodes()) {   
+                    pageDiv.removeChild(pageDiv.firstChild);
+                }
+            }
+            
+            function updatePage(recipeData){
+                clearPage();
+               
+                
+                for(var i = 0; i < recipeData.length; i++){
+                    getDetails(recipeData[i], false);
+                }
+            }    
+            
+            function addRecipe(json) {
+                
+                var pageDiv = document.getElementById("results");
+                var div =  document.createElement('div');
+                div.className = "row boxhovered";
+                div.value = json.id;
+                div.setAttribute("data-toggle", "modal");
+                div.setAttribute("data-target", "myModal");
+                console.log(json.id);
+                div.onclick = function(){
+                    getDetails(this.value, true);
+                };
+                pageDiv.appendChild(div);
+                var col1 = document.createElement('div');
+                col1.className = "col-md-2";
+                var img = document.createElement('img');
+                img.src = json.image;
+                img.style.width = "100px";
+                img.style.height = "100px";
+                col1.appendChild(img);
+                div.appendChild(col1);
+                
+                var col2 = document.createElement('div');
+                col2.className = "col-md-9";
+                var row1 = document.createElement('div');
+                row1.className = "row";
+                var header = document.createElement('h4');
+                header.appendChild( document.createTextNode(json.title));
+                row1.appendChild(header);
+                col2.appendChild(row1);
+                
+                var row2 = document.createElement('div');
+                row2.className = "row";
+                col2.appendChild(row2);
+                div.appendChild(col2);
+                
+                var col3 = document.createElement('div');
+                col3.className = "col-md-1";
+                var btn = document.createElement('button');
+                btn.className = "btn btn-primary btn-block btn-md";
+                btn.innerHTML = '<span class="glyphicon glyphicon-trash"></span>';
+                btn.value = json.id;
+                btn.onclick = function(){
+                    deleteFavorite(this.value);
+                };
+                col3.appendChild(btn);
+                div.appendChild(col3);
+            }
+            
+            function openModal(json){
+                
+                document.getElementById("recipeTitle").innerHTML = json.title;
+                document.getElementById("currRecipe").value = json.id;
+                getSummary(json.id);
+                document.getElementById("recipePicture").src = json.image;
+                document.getElementById("actualRecipe").innerHTML = json.instructions;
+                var ingredients = json.extendedIngredients;
+                var recipeIngredients = document.getElementById("recipeIngredients");
+                
+                while (recipeIngredients.hasChildNodes()) {   
+                    recipeIngredients.removeChild(recipeIngredients.firstChild);
+                }
+                for (var i = 0; i < ingredients.length; i++) {
+                    var newEle = document.createElement('li');
+                    newEle.appendChild(document.createTextNode(ingredients[i].originalString));
+                    recipeIngredients.appendChild(newEle);
+                }
+                    
+                document.getElementById("recipeServings").innerHTML = json.servings;
+                document.getElementById("recipePrep").innerHTML = json.preparationMinutes;
+                document.getElementById("recipeReady").innerHTML = json.readyInMinutes;
+                document.getElementById("recipeSource").innerHTML = json.sourceName;
+                document.getElementById("recipeSource").href = json.sourceUrl;
+                
+                document.getElementById("vegan").innerHTML = json.vegan;
+                document.getElementById("vegetarian").innerHTML = json.vegetarian;
+                document.getElementById("dairyfree").innerHTML = json.dairyFree;
+                document.getElementById("gluten").innerHTML = json.glutenFree;
+                $("#myModal").modal('show');
+            }
+            
+            function getSummary(id){
+                $.ajax({
+                    url: "getSummary.php?id=" + id,
+                    success: function(resp){
+                        var json = jQuery.parseJSON(resp);
+                        //console.log(json);
+                        setSummary(json);
+                    }
+                });
+                
+            }
+            
+            function setSummary(json) {
+                document.getElementById("summary").innerHTML = json.summary;
+            }
+            
+            function deleteFavorite(id){
+                //delete the favorite with this id  for the logged in user
+            }
+        </script>
+    </head>
+    
+    <body>
+        <!-- Navbar -->
+        <nav class="navbar navbar-default">
+            <a class="navbar-brand" href="#">ByteBook</a>
+            <ul class="nav navbar-nav navbar-left">
+                <li><a href="searchRecipes.html">Search Recipes</a></li>
+                <li><a href="#">My Recipes</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="login.html">Login</a></li>
+                <li><p>. . .</p></li>
+            </ul>
+        </nav>
+        
+         <!-- List of Favorited Recipes -->
+         
+        <div class = "container" id = "results">
+            
+        </div>
+        
+        <!--  Next/Back -->
+        
+        <div class = "container">
+            <div class = "row">
+                <div class = "col-md-5"> </div>
+                <div class = "col-md-1"> 
+                    <button type="button" class="btn btn-primary btn-block btn-md" id ="prev" onclick="prev();">Prev</button>
+                </div>
+                <div class = "col-md-1"> 
+                    <button type="button" class="btn btn-primary btn-block btn-md" id ="next" onclick="next();">Next</button>
+                </div>
+                <div class = "col-md-5"> </div>
+            </div>
+        </div>
+        
+        <!--  Display Recipe once clicked on -->
+        <div id="myModal" class="modal fade">
+            <div class="modal-admin" role="document">
+                <div class="modal-content">
+                    
+                    <div class="modal-header">
+                        <h3 class="modal-title" id = "recipeTitle"></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class = "container-fluid">
+                            <div id = "currRecipe" value = ""></div>  <!-- Display ID -->
+                            <div class = "row">
+                                <div class = "col-md-4"></div>
+                                <div class = "col-md-4">
+                                    <img src="" height = "400px" width = "400px" id = "recipePicture"></img>
+                                </div>
+                                <div class = "col-md-4"></div>
+                            </div>
+                            <div class = 'row'>
+                                <div class = "col-md-1"></div>
+                                <div class = "col-md-10">
+                                    <p id = "summary"></p>
+                                </div>
+                                <div class = "col-md-1"></div>
+                                
+                            </div>
+                            
+                            <div id="accordion" role="tablist" aria-multiselectable="true">
+                                
+                                <div class="card highlighted">
+                                    <div class="card-header" role="tab" id="headingOne">
+                                        <h3 class="mb-0">
+                                            <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                                Ingredients
+                                            </a>
+                                        </h3>
+                                    </div>
+                                    <div id="collapseOne" role="tabpanel" aria-labelledby="headingOne">
+                                        <div class="card-block">
+                                            <ul id = "recipeIngredients">
+                                                
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card highlighted">
+                                    <div class="card-header" role="tab" id="headingTwo">
+                                        <h3 class="mb-0">
+                                            <a data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
+                                                Recipe
+                                            </a>
+                                        </h3>
+                                    </div>
+                                    <div id="collapseTwo"  role="tabpanel" aria-labelledby="headingTwo">
+                                        <div class="card-block">
+                                            <p id = "actualRecipe"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card highlighted">
+                                    <div class="card-header" role="tab" id="headingThree">
+                                        <h3 class="mb-0">
+                                            <a data-toggle="collapse" data-parent="#accordion" href="#collapseThree" aria-expanded="true" aria-controls="collapseThree">
+                                                Other Information
+                                            </a>
+                                        </h3>
+                                    </div>
+                                    <div id="collapseThree"  role="tabpanel" aria-labelledby="headingThree">
+                                        <div class="card-block">
+                                            <ul>
+                                                <li>Servings: <span id = "recipeServings"></span></li>
+                                                <li>Preperation Time: <span id = "recipePrep"></span></li>
+                                                <li>Ready Time: <span id = "recipeReady"></span></li>
+                                                <li>Source: <a id = "recipeSource"></a></li>
+                                            </ul>
+                                            
+                                            <ul>
+                                                <li>Vegan: <span id = "vegan"></span></li>
+                                                <li>Vegetarian: <span id = "vegetarian"></span></li>
+                                                <li>Dairy Free: <span id = "dairyfree"></span></li>
+                                                <li>Gluten Free: <span id = "gluten"></span></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card highlighted">
+                                    <div class="card-header" role="tab" id="headingFour">
+                                        <h3 class="mb-0">
+                                            <a data-toggle="collapse" data-parent="#accordion" href="#collapseFour" aria-expanded="true" aria-controls="collapseFour">
+                                                Nutrition
+                                            </a>
+                                        </h3>
+                                    </div>
+                                    <div id="collapseFour"  role="tabpanel" aria-labelledby="headingFour">
+                                        <div class="card-block">
+            
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick = "deleteFavorite(document.getElementById('currRecipe').value)"><span class="glyphicon glyphicon-trash"></span></button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        
+    </body>
+</html>
